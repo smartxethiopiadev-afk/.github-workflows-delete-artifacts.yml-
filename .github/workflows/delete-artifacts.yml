@@ -1,0 +1,16 @@
+name: Clear All Artifacts
+
+on:
+  workflow_dispatch: # ይህንን አሰራር በ GitHub Actions ታብ በኩል በራሳችን ጊዜ (Manual) እንድንጀምረው ያደርገዋል
+
+jobs:
+  del_artifacts:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Delete all artifacts
+        uses: jimschubert/delete-artifacts-action@v1
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          commit_filter: ""
+          min_bytes: '0'
+          dry_run: "false"
