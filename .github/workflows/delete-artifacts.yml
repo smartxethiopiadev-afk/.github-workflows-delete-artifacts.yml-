@@ -1,27 +1,43 @@
-name: Delete All Releases and Tags
+name: Delete Specific Release and Tag
 
 on:
   workflow_dispatch:
+    inputs:
+      tag_name:
+        description: 'ሊጠፋ የሚገባው የ Release Tag (ለምሳሌ፡ v1.0.83 ወይም 83)'
+        required: true
+        default: '83'
+        type: string
 
 jobs:
-  delete_releases:
+  delete_release:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
+      - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Delete all releases and tags
+      - name: Check and Delete Release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           REPO: ${{ github.repository }}
+          TARGET_TAG: ${{ inputs.tag_name }}
         run: |
-          echo "Fetching all releases..."
-          tags=$(gh api repos/$REPO/releases --paginate --jq '.[].tag_name')
+          echo "Checking if release with tag '$TARGET_TAG' exists..."
           
-          for tag in $tags; do
-            echo "Deleting release and tag: $tag"
-            gh release delete "$tag" --yes --cleanup-tag || true
-          done
-          
-          echo "All releases deleted successfully!"
+          # 1. ሪሊዙ መኖሩን ቼክ ማድረግ
+          if gh release view "$TARGET_TAG" --repo "$REPO" > /dev/null 2>&1; then
+            echo "Release found! Proceeding to delete..."
+            
+            # 2. ሪሊዙን እና ታጉን ማጥፋት
+            if gh release delete "$TARGET_TAG" --repo "$REPO" --yes --cleanup-tag; then
+              echo "SUCCESS: Release and tag '$TARGET_TAG' have been deleted successfully."
+            else
+              echo "ERROR: Failed to delete release '$TARGET_TAG'." >&2
+              exit 1
+            fi
+          else
+            # 3. ካልተገኘ Error Display ማድረግ
+            echo "ERROR: Release with tag '$TARGET_TAG' does not exist in this repository!" >&2
+            exit 1
+          fi
           
